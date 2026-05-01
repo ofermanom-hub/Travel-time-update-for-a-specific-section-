@@ -73,10 +73,10 @@ function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef, setVertexC
   return null;
 }
 
-function RouteClickHandler({ picking, dispatch }) {
+function RouteClickHandler({ picking, drawing, dispatch }) {
   useMapEvents({
     click(e) {
-      if (!picking) return;
+      if (!picking || drawing) return;
       dispatch({ type: 'SET_ROUTE_POINT', payload: { lat: e.latlng.lat, lng: e.latlng.lng } });
     },
   });
@@ -189,7 +189,7 @@ export default function MapView({
         setVertexCount={setVertexCount}
         clearDrawnRef={clearDrawnRef}
       />
-      <RouteClickHandler picking={picking} dispatch={dispatch} />
+      <RouteClickHandler picking={picking} drawing={drawing} dispatch={dispatch} />
     </MapContainer>
   );
 }
