@@ -287,3 +287,38 @@ html, body, #root {
 .result-row strong.worse {
   color: #dc2626;
 }
+
+/* ── Route pulse animation (applied via Leaflet pathOptions className) ── */
+@keyframes route-pulse {
+  0%, 100% { stroke-opacity: 1; }
+  50%       { stroke-opacity: 0.35; }
+}
+
+.route-pulse {
+  animation: route-pulse 1.6s ease-in-out infinite;
+}
+
+/* ── Map layers toggle ── */
+.map-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-row input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  accent-color: #6366f1;
+  cursor: pointer;
+  flex-shrink: 0;
+}

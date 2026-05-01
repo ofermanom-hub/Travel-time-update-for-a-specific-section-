@@ -3,6 +3,7 @@ export default function Controls({
   picking, setpicking,
   drawing, setDrawing, drawHandlerRef,
   vertexCount, clearDrawnRef,
+  showGrid, setShowGrid,
 }) {
   const { records, originalRecords, lastCalculated, selectedPolygon, changedIds } = state;
 
@@ -150,6 +151,18 @@ export default function Controls({
           <span className="stat-label">Modified</span>
           <span className="stat-value modified">{modifiedCount}</span>
         </div>
+      </section>
+
+      <section className="map-layers">
+        <h2>Map layers</h2>
+        <label className="toggle-row">
+          <input
+            type="checkbox"
+            checked={showGrid}
+            onChange={(e) => setShowGrid(e.target.checked)}
+          />
+          Show route grid ({state.records.length} lines)
+        </label>
       </section>
 
       <section className="legend">

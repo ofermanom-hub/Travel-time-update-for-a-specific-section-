@@ -116,6 +116,7 @@ export default function App() {
   const [picking, setpicking] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [vertexCount, setVertexCount] = useState(0);
+  const [showGrid, setShowGrid] = useState(false);
   const drawHandlerRef = useRef(null);
   const clearDrawnRef = useRef(null);
 
@@ -132,6 +133,7 @@ export default function App() {
         setVertexCount={setVertexCount}
         clearDrawnRef={clearDrawnRef}
         dispatch={dispatch}
+        showGrid={showGrid}
       />
       <Controls
         state={state}
@@ -143,6 +145,8 @@ export default function App() {
         drawHandlerRef={drawHandlerRef}
         vertexCount={vertexCount}
         clearDrawnRef={clearDrawnRef}
+        showGrid={showGrid}
+        setShowGrid={setShowGrid}
       />
     </div>
   );

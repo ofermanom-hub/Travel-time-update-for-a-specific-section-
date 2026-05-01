@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, Rectangle, useMap, useMapEvents } from 'react-leaflet';
+import { useEffect, useRef, Fragment } from 'react';
+import { MapContainer, TileLayer, Polyline, Marker, Rectangle, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -99,8 +99,14 @@ const endIcon = new L.Icon({
   iconAnchor: [12, 41],
 });
 
-export default function MapView({ records, routePoints, changedIds, picking, drawing, setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef, dispatch }) {
+export default function MapView({
+  records, routePoints, changedIds, picking, drawing,
+  setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef, dispatch, showGrid,
+}) {
   const changedSet = new Set(changedIds);
+
+  // When grid is off, only render changed routes so highlights remain visible
+  const visibleRecords = showGrid ? records : records.filter((r) => changedSet.has(r.id));
 
   return (
     <MapContainer
@@ -121,30 +127,58 @@ export default function MapView({ records, routePoints, changedIds, picking, dra
         pathOptions={{ color: '#6366f1', weight: 2, dashArray: '6 5', fill: true, fillColor: '#6366f1', fillOpacity: 0.03 }}
       />
 
-      {/* Route polylines — changed ones get a glow + thicker line */}
-      {records.map((rec) => {
+      {/* Route polylines */}
+      {visibleRecords.map((rec) => {
         const changed = changedSet.has(rec.id);
         const positions = [[rec.originLat, rec.originLng], [rec.destLat, rec.destLng]];
         const color = routeColor(rec.travelTimeMin);
-        return changed ? (
-          <Polyline key={rec.id} positions={positions}
-            pathOptions={{ color: '#fff', weight: 7, opacity: 0.55 }}
-          >
-            <Polyline positions={positions}
-              pathOptions={{ color, weight: 3.5, opacity: 1 }}
-            />
-          </Polyline>
-        ) : (
-          <Polyline key={rec.id} positions={positions}
+        const distKm = ((rec.travelTimeMin / 60) * 25).toFixed(2);
+        const tooltip = (
+          <Tooltip sticky>
+            <strong>Route #{rec.id}</strong><br />
+            {distKm} km &middot; {rec.travelTimeMin.toFixed(1)} min
+          </Tooltip>
+        );
+
+        if (changed) {
+          return (
+            <Fragment key={rec.id}>
+              <Polyline
+                positions={positions}
+                pathOptions={{ color: '#ffffff', weight: 7, opacity: 0.55 }}
+              />
+              <Polyline
+                positions={positions}
+                pathOptions={{ color, weight: 3.5, opacity: 1, className: 'route-pulse' }}
+              >
+                {tooltip}
+              </Polyline>
+            </Fragment>
+          );
+        }
+
+        return (
+          <Polyline
+            key={rec.id}
+            positions={positions}
             pathOptions={{ color, weight: 1.5, opacity: 0.6 }}
-          />
+          >
+            {tooltip}
+          </Polyline>
         );
       })}
 
       {routePoints[0] && <Marker position={[routePoints[0].lat, routePoints[0].lng]} icon={startIcon} />}
       {routePoints[1] && <Marker position={[routePoints[1].lat, routePoints[1].lng]} icon={endIcon} />}
 
-      <DrawControl dispatch={dispatch} drawing={drawing} setDrawing={setDrawing} drawHandlerRef={drawHandlerRef} setVertexCount={setVertexCount} clearDrawnRef={clearDrawnRef} />
+      <DrawControl
+        dispatch={dispatch}
+        drawing={drawing}
+        setDrawing={setDrawing}
+        drawHandlerRef={drawHandlerRef}
+        setVertexCount={setVertexCount}
+        clearDrawnRef={clearDrawnRef}
+      />
       <RouteClickHandler picking={picking} dispatch={dispatch} />
     </MapContainer>
   );
