@@ -4,7 +4,7 @@ export default function Controls({
   drawing, setDrawing, drawHandlerRef,
   vertexCount, clearDrawnRef,
 }) {
-  const { records, originalRecords, lastCalculated, selectedPolygon } = state;
+  const { records, originalRecords, lastCalculated, selectedPolygon, changedIds } = state;
 
   const modifiedCount = records.filter(
     (r, i) => r.travelTimeMin !== originalRecords[i].travelTimeMin
@@ -32,7 +32,7 @@ export default function Controls({
   }
 
   function handleRefreshGIS() {
-    dispatch({ type: 'MUTATE_IN_POLYGON', payload: selectedPolygon });
+    dispatch({ type: 'REFRESH_SUBSET' });
   }
 
   return (
@@ -98,6 +98,11 @@ export default function Controls({
           <button className="btn btn-refresh" onClick={handleRefreshGIS}>
             ↻ Refresh travel time from new GIS data
           </button>
+          {changedIds.length > 0 && (
+            <p className="hint">
+              {changedIds.length} route{changedIds.length !== 1 ? 's' : ''} updated — highlighted on map.
+            </p>
+          )}
           <button className="btn btn-outline-danger" onClick={handleClearPolygon}>
             ✕ Reset polygon
           </button>

@@ -23,6 +23,7 @@ const initialState = {
   selectedPolygon: null,
   routePoints: [],
   lastCalculated: null,
+  changedIds: [],
 };
 
 function reducer(state, action) {
@@ -32,13 +33,34 @@ function reducer(state, action) {
 
     case 'MUTATE_IN_POLYGON': {
       const polygon = action.payload;
+      const changedIds = [];
       const mutated = state.records.map((rec) => {
         const pt = point([rec.originLng, rec.originLat]);
         if (!booleanPointInPolygon(pt, polygon)) return rec;
+        changedIds.push(rec.id);
         const factor = 1 + (Math.random() * 1.0 - 0.4); // random(-0.4, +0.6)
         return { ...rec, travelTimeMin: rec.travelTimeMin * factor };
       });
-      return { ...state, records: mutated };
+      return { ...state, records: mutated, changedIds };
+    }
+
+    case 'REFRESH_SUBSET': {
+      const polygon = state.selectedPolygon;
+      if (!polygon) return state;
+      // Collect all records whose origin is inside the polygon
+      const inside = state.records.filter((rec) =>
+        booleanPointInPolygon(point([rec.originLng, rec.originLat]), polygon)
+      );
+      // Pick a random ~30%, min 3, max 20
+      const subsetSize = Math.max(3, Math.min(20, Math.floor(inside.length * 0.3)));
+      const shuffled = [...inside].sort(() => Math.random() - 0.5);
+      const selectedIds = new Set(shuffled.slice(0, subsetSize).map((r) => r.id));
+      const updated = state.records.map((rec) => {
+        if (!selectedIds.has(rec.id)) return rec;
+        const factor = 1 + (Math.random() * 1.0 - 0.4);
+        return { ...rec, travelTimeMin: rec.travelTimeMin * factor };
+      });
+      return { ...state, records: updated, changedIds: [...selectedIds] };
     }
 
     case 'SET_ROUTE_POINT': {
@@ -75,7 +97,7 @@ function reducer(state, action) {
     }
 
     case 'CLEAR_POLYGON':
-      return { ...state, selectedPolygon: null, records: state.originalRecords };
+      return { ...state, selectedPolygon: null, records: state.originalRecords, changedIds: [] };
 
     case 'RESET':
       return {
@@ -102,6 +124,7 @@ export default function App() {
       <MapView
         records={state.records}
         routePoints={state.routePoints}
+        changedIds={state.changedIds}
         picking={picking}
         drawing={drawing}
         setDrawing={setDrawing}

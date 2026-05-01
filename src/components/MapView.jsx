@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, Rectangle, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw/dist/leaflet.draw.css';
@@ -13,10 +13,13 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
+// Bounding box that matches seedTravelTimes.js (Manhattan + Brooklyn)
+const DATA_BOUNDS = [[40.68, -74.02], [40.82, -73.93]];
+
 function routeColor(travelTimeMin) {
-  if (travelTimeMin < 10) return '#22c55e';   // green
-  if (travelTimeMin <= 25) return '#f59e0b';  // amber
-  return '#ef4444';                            // red
+  if (travelTimeMin < 10) return '#22c55e';
+  if (travelTimeMin <= 25) return '#f59e0b';
+  return '#ef4444';
 }
 
 // Manages the L.Draw.Polygon handler and syncs with the drawing state
@@ -25,14 +28,12 @@ function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef, setVertexC
   const drawnRef = useRef(null);
   const handlerRef = useRef(null);
 
-  // Create handler and drawn-items layer once
   useEffect(() => {
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     drawnRef.current = drawnItems;
     clearDrawnRef.current = () => drawnItems.clearLayers();
 
-    // allowIntersection:false + snapDistance make it easy to snap-close on the first vertex
     const handler = new L.Draw.Polygon(map, {
       shapeOptions: { color: '#6366f1', weight: 2 },
       allowIntersection: false,
@@ -51,9 +52,7 @@ function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef, setVertexC
       dispatch({ type: 'MUTATE_IN_POLYGON', payload: geoJson });
     });
 
-    // Track vertex count for undo/close button state
     map.on('draw:drawvertex', () => setVertexCount((c) => c + 1));
-    // Reset count when drawing session ends (complete or cancel)
     map.on('draw:drawstop', () => setVertexCount(0));
 
     return () => {
@@ -67,22 +66,16 @@ function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef, setVertexC
     };
   }, [map, dispatch, setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef]);
 
-  // Sync drawing state → enable/disable handler
   useEffect(() => {
     const handler = handlerRef.current;
     if (!handler) return;
-    if (drawing) {
-      handler.enable();
-    } else {
-      handler.disable();
-    }
+    drawing ? handler.enable() : handler.disable();
   }, [drawing]);
 
   return null;
 }
 
-// Handles click-to-place route markers when picking mode is active
-function RouteClickHandler({ picking, routePoints, dispatch }) {
+function RouteClickHandler({ picking, dispatch }) {
   useMapEvents({
     click(e) {
       if (!picking) return;
@@ -106,11 +99,15 @@ const endIcon = new L.Icon({
   iconAnchor: [12, 41],
 });
 
-export default function MapView({ records, routePoints, picking, drawing, setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef, dispatch }) {
+export default function MapView({ records, routePoints, changedIds, picking, drawing, setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef, dispatch }) {
+  const changedSet = new Set(changedIds);
+
   return (
     <MapContainer
-      center={[40.75, -73.98]}
-      zoom={12}
+      center={[40.754, -73.974]}
+      zoom={13}
+      maxBounds={[[40.60, -74.12], [40.92, -73.75]]}
+      maxBoundsViscosity={0.85}
       style={{ height: '100vh', width: '100%' }}
     >
       <TileLayer
@@ -118,22 +115,37 @@ export default function MapView({ records, routePoints, picking, drawing, setDra
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {records.map((rec) => (
-        <Polyline
-          key={rec.id}
-          positions={[
-            [rec.originLat, rec.originLng],
-            [rec.destLat, rec.destLng],
-          ]}
-          pathOptions={{ color: routeColor(rec.travelTimeMin), weight: 1.5, opacity: 0.7 }}
-        />
-      ))}
+      {/* Data coverage border */}
+      <Rectangle
+        bounds={DATA_BOUNDS}
+        pathOptions={{ color: '#6366f1', weight: 2, dashArray: '6 5', fill: true, fillColor: '#6366f1', fillOpacity: 0.03 }}
+      />
+
+      {/* Route polylines — changed ones get a glow + thicker line */}
+      {records.map((rec) => {
+        const changed = changedSet.has(rec.id);
+        const positions = [[rec.originLat, rec.originLng], [rec.destLat, rec.destLng]];
+        const color = routeColor(rec.travelTimeMin);
+        return changed ? (
+          <Polyline key={rec.id} positions={positions}
+            pathOptions={{ color: '#fff', weight: 7, opacity: 0.55 }}
+          >
+            <Polyline positions={positions}
+              pathOptions={{ color, weight: 3.5, opacity: 1 }}
+            />
+          </Polyline>
+        ) : (
+          <Polyline key={rec.id} positions={positions}
+            pathOptions={{ color, weight: 1.5, opacity: 0.6 }}
+          />
+        );
+      })}
 
       {routePoints[0] && <Marker position={[routePoints[0].lat, routePoints[0].lng]} icon={startIcon} />}
       {routePoints[1] && <Marker position={[routePoints[1].lat, routePoints[1].lng]} icon={endIcon} />}
 
       <DrawControl dispatch={dispatch} drawing={drawing} setDrawing={setDrawing} drawHandlerRef={drawHandlerRef} setVertexCount={setVertexCount} clearDrawnRef={clearDrawnRef} />
-      <RouteClickHandler picking={picking} routePoints={routePoints} dispatch={dispatch} />
+      <RouteClickHandler picking={picking} dispatch={dispatch} />
     </MapContainer>
   );
 }
