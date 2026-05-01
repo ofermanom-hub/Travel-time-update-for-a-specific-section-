@@ -66,10 +66,10 @@ function reducer(state, action) {
       const subsetSize = Math.max(3, Math.min(20, Math.floor(inside.length * 0.3)));
       const shuffled = [...inside].sort(() => Math.random() - 0.5);
       const selectedIds = new Set(shuffled.slice(0, subsetSize).map((r) => r.id));
-      const updated = state.records.map((rec) => {
+      const updated = state.records.map((rec, i) => {
         if (!selectedIds.has(rec.id)) return rec;
-        const factor = 1 + (Math.random() * 1.0 - 0.4);
-        return { ...rec, travelTimeMin: rec.travelTimeMin * factor };
+        const factor = 1 + (Math.random() * 0.6 - 0.3);
+        return { ...rec, travelTimeMin: state.originalRecords[i].travelTimeMin * factor };
       });
       return { ...state, records: updated, changedIds: [...selectedIds] };
     }
