@@ -74,6 +74,9 @@ function reducer(state, action) {
       };
     }
 
+    case 'CLEAR_POLYGON':
+      return { ...state, selectedPolygon: null, records: state.originalRecords };
+
     case 'RESET':
       return {
         ...initialState,
@@ -90,7 +93,9 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [picking, setpicking] = useState(false);
   const [drawing, setDrawing] = useState(false);
+  const [vertexCount, setVertexCount] = useState(0);
   const drawHandlerRef = useRef(null);
+  const clearDrawnRef = useRef(null);
 
   return (
     <div className="app-layout">
@@ -101,6 +106,8 @@ export default function App() {
         drawing={drawing}
         setDrawing={setDrawing}
         drawHandlerRef={drawHandlerRef}
+        setVertexCount={setVertexCount}
+        clearDrawnRef={clearDrawnRef}
         dispatch={dispatch}
       />
       <Controls
@@ -111,6 +118,8 @@ export default function App() {
         drawing={drawing}
         setDrawing={setDrawing}
         drawHandlerRef={drawHandlerRef}
+        vertexCount={vertexCount}
+        clearDrawnRef={clearDrawnRef}
       />
     </div>
   );

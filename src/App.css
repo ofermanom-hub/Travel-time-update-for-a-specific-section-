@@ -186,6 +186,74 @@ html, body, #root {
   margin-top: 0;
 }
 
+/* ── Drawing tools (undo / close) ── */
+.drawing-tools {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawing-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-sm {
+  flex: 1;
+  padding: 7px 8px;
+  font-size: 0.8rem;
+  margin-top: 0;
+}
+
+.btn-snap {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+
+.btn-snap:hover:not(:disabled) {
+  background: #4f46e5;
+  border-color: #4f46e5;
+}
+
+/* ── Polygon tools (refresh / reset polygon) ── */
+.polygon-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.polygon-tools .btn {
+  margin-top: 0;
+}
+
+.btn-refresh {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #4ade80;
+}
+
+.btn-outline-danger {
+  background: #fff;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.btn-outline-danger:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
 /* ── Results panel ── */
 .results {
   background: #f8fafc;

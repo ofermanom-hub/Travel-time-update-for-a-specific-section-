@@ -1,5 +1,10 @@
-export default function Controls({ state, dispatch, picking, setpicking, drawing, setDrawing, drawHandlerRef }) {
-  const { records, originalRecords, lastCalculated } = state;
+export default function Controls({
+  state, dispatch,
+  picking, setpicking,
+  drawing, setDrawing, drawHandlerRef,
+  vertexCount, clearDrawnRef,
+}) {
+  const { records, originalRecords, lastCalculated, selectedPolygon } = state;
 
   const modifiedCount = records.filter(
     (r, i) => r.travelTimeMin !== originalRecords[i].travelTimeMin
@@ -7,9 +12,27 @@ export default function Controls({ state, dispatch, picking, setpicking, drawing
 
   function handleReset() {
     drawHandlerRef.current?.disable();
+    clearDrawnRef.current?.();
     setDrawing(false);
     setpicking(false);
     dispatch({ type: 'RESET' });
+  }
+
+  function handleClearPolygon() {
+    clearDrawnRef.current?.();
+    dispatch({ type: 'CLEAR_POLYGON' });
+  }
+
+  function handleUndo() {
+    drawHandlerRef.current?.deleteLastVertex();
+  }
+
+  function handleClosePolygon() {
+    drawHandlerRef.current?._finishShape();
+  }
+
+  function handleRefreshGIS() {
+    dispatch({ type: 'MUTATE_IN_POLYGON', payload: selectedPolygon });
   }
 
   return (
@@ -44,11 +67,45 @@ export default function Controls({ state, dispatch, picking, setpicking, drawing
         </button>
       </section>
 
+      {/* Drawing tools — visible while polygon is being drawn */}
+      {drawing && (
+        <section className="drawing-tools">
+          <p className="hint">
+            Click to place corners. Hover near the first point to snap-close, or use the buttons below.
+          </p>
+          <div className="drawing-btns">
+            <button
+              className="btn btn-sm"
+              onClick={handleUndo}
+              disabled={vertexCount === 0}
+            >
+              ↩ Undo
+            </button>
+            <button
+              className="btn btn-sm btn-snap"
+              onClick={handleClosePolygon}
+              disabled={vertexCount < 3}
+            >
+              ⬡ Close polygon
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Polygon actions — visible once a polygon has been drawn */}
+      {selectedPolygon && !drawing && (
+        <section className="polygon-tools">
+          <button className="btn btn-refresh" onClick={handleRefreshGIS}>
+            ↻ Refresh travel time from new GIS data
+          </button>
+          <button className="btn btn-outline-danger" onClick={handleClearPolygon}>
+            ✕ Reset polygon
+          </button>
+        </section>
+      )}
+
       {picking && (
         <p className="hint">Click the map to place up to 2 route markers (green = start, red = end).</p>
-      )}
-      {drawing && (
-        <p className="hint">Click to place polygon corners. Double-click to finish.</p>
       )}
 
       {lastCalculated && (

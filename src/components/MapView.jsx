@@ -20,7 +20,7 @@ function routeColor(travelTimeMin) {
 }
 
 // Manages the L.Draw.Polygon handler and syncs with the drawing state
-function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef }) {
+function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef }) {
   const map = useMap();
   const drawnRef = useRef(null);
   const handlerRef = useRef(null);
@@ -30,8 +30,15 @@ function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef }) {
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     drawnRef.current = drawnItems;
+    clearDrawnRef.current = () => drawnItems.clearLayers();
 
-    const handler = new L.Draw.Polygon(map, { shapeOptions: { color: '#6366f1', weight: 2 } });
+    // allowIntersection:false + snapDistance make it easy to snap-close on the first vertex
+    const handler = new L.Draw.Polygon(map, {
+      shapeOptions: { color: '#6366f1', weight: 2 },
+      allowIntersection: false,
+      showArea: false,
+      snapDistance: 20,
+    });
     handlerRef.current = handler;
     drawHandlerRef.current = handler;
 
@@ -44,13 +51,21 @@ function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef }) {
       dispatch({ type: 'MUTATE_IN_POLYGON', payload: geoJson });
     });
 
+    // Track vertex count for undo/close button state
+    map.on('draw:drawvertex', () => setVertexCount((c) => c + 1));
+    // Reset count when drawing session ends (complete or cancel)
+    map.on('draw:drawstop', () => setVertexCount(0));
+
     return () => {
       handler.disable();
       map.removeLayer(drawnItems);
       map.off(L.Draw.Event.CREATED);
+      map.off('draw:drawvertex');
+      map.off('draw:drawstop');
       drawHandlerRef.current = null;
+      clearDrawnRef.current = null;
     };
-  }, [map, dispatch, setDrawing, drawHandlerRef]);
+  }, [map, dispatch, setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef]);
 
   // Sync drawing state → enable/disable handler
   useEffect(() => {
@@ -91,7 +106,7 @@ const endIcon = new L.Icon({
   iconAnchor: [12, 41],
 });
 
-export default function MapView({ records, routePoints, picking, drawing, setDrawing, drawHandlerRef, dispatch }) {
+export default function MapView({ records, routePoints, picking, drawing, setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef, dispatch }) {
   return (
     <MapContainer
       center={[40.75, -73.98]}
@@ -117,7 +132,7 @@ export default function MapView({ records, routePoints, picking, drawing, setDra
       {routePoints[0] && <Marker position={[routePoints[0].lat, routePoints[0].lng]} icon={startIcon} />}
       {routePoints[1] && <Marker position={[routePoints[1].lat, routePoints[1].lng]} icon={endIcon} />}
 
-      <DrawControl dispatch={dispatch} drawing={drawing} setDrawing={setDrawing} drawHandlerRef={drawHandlerRef} />
+      <DrawControl dispatch={dispatch} drawing={drawing} setDrawing={setDrawing} drawHandlerRef={drawHandlerRef} setVertexCount={setVertexCount} clearDrawnRef={clearDrawnRef} />
       <RouteClickHandler picking={picking} routePoints={routePoints} dispatch={dispatch} />
     </MapContainer>
   );
