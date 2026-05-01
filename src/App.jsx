@@ -1,4 +1,4 @@
-import { useReducer, useState } from 'react';
+import { useReducer, useRef, useState } from 'react';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point } from '@turf/helpers';
 import seedData from './data/seedTravelTimes.js';
@@ -89,6 +89,8 @@ function reducer(state, action) {
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [picking, setpicking] = useState(false);
+  const [drawing, setDrawing] = useState(false);
+  const drawHandlerRef = useRef(null);
 
   return (
     <div className="app-layout">
@@ -96,6 +98,9 @@ export default function App() {
         records={state.records}
         routePoints={state.routePoints}
         picking={picking}
+        drawing={drawing}
+        setDrawing={setDrawing}
+        drawHandlerRef={drawHandlerRef}
         dispatch={dispatch}
       />
       <Controls
@@ -103,6 +108,9 @@ export default function App() {
         dispatch={dispatch}
         picking={picking}
         setpicking={setpicking}
+        drawing={drawing}
+        setDrawing={setDrawing}
+        drawHandlerRef={drawHandlerRef}
       />
     </div>
   );

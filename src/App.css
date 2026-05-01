@@ -154,7 +154,6 @@ html, body, #root {
 }
 
 .btn.btn-reset {
-  margin-top: auto;
   background: #fef2f2;
   border-color: #fca5a5;
   color: #b91c1c;
@@ -172,9 +171,19 @@ html, body, #root {
   margin-top: 6px;
 }
 
-/* ── Instructions ── */
-.instructions p {
-  font-size: 0.82rem;
+/* ── Actions group ── */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.actions .btn {
+  margin-top: 0;
 }
 
 /* ── Results panel ── */
@@ -209,11 +218,4 @@ html, body, #root {
 
 .result-row strong.worse {
   color: #dc2626;
-}
-
-/* ── Route section ── */
-.route-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
 }

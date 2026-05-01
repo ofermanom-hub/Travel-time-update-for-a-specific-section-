@@ -1,60 +1,36 @@
-export default function Controls({ state, dispatch, picking, setpicking }) {
+export default function Controls({ state, dispatch, picking, setpicking, drawing, setDrawing, drawHandlerRef }) {
   const { records, originalRecords, lastCalculated } = state;
 
   const modifiedCount = records.filter(
     (r, i) => r.travelTimeMin !== originalRecords[i].travelTimeMin
   ).length;
 
+  function handleReset() {
+    drawHandlerRef.current?.disable();
+    setDrawing(false);
+    setpicking(false);
+    dispatch({ type: 'RESET' });
+  }
+
   return (
     <aside className="sidebar">
       <h1 className="sidebar-title">NYC Travel Time</h1>
 
-      <section className="stats">
-        <div className="stat">
-          <span className="stat-label">Total records</span>
-          <span className="stat-value">{records.length}</span>
-        </div>
-        <div className="stat">
-          <span className="stat-label">Modified</span>
-          <span className="stat-value modified">{modifiedCount}</span>
-        </div>
-      </section>
+      <section className="actions">
+        <button
+          className={`btn ${drawing ? 'btn-active' : ''}`}
+          onClick={() => setDrawing((d) => !d)}
+        >
+          {drawing ? 'Cancel drawing' : 'Draw polygon'}
+        </button>
 
-      <section className="legend">
-        <h2>Travel time legend</h2>
-        <div className="legend-row">
-          <span className="dot green" /> &lt; 10 min
-        </div>
-        <div className="legend-row">
-          <span className="dot amber" /> 10 – 25 min
-        </div>
-        <div className="legend-row">
-          <span className="dot red" /> &gt; 25 min
-        </div>
-      </section>
-
-      <section className="instructions">
-        <h2>Draw a polygon</h2>
-        <p>
-          Use the polygon tool (top-right of map) to select an area. All route
-          origins inside the polygon will have their travel times randomly mutated
-          to simulate new traffic data.
-        </p>
-      </section>
-
-      <section className="route-section">
-        <h2>Point-to-point calculator</h2>
         <button
           className={`btn ${picking ? 'btn-active' : ''}`}
           onClick={() => setpicking((p) => !p)}
         >
           {picking ? 'Cancel picking' : 'Pick route points'}
         </button>
-        {picking && (
-          <p className="hint">
-            Click the map to place up to 2 route markers (green = start, red = end).
-          </p>
-        )}
+
         <button
           className="btn"
           onClick={() => dispatch({ type: 'CALCULATE_ROUTE' })}
@@ -62,7 +38,18 @@ export default function Controls({ state, dispatch, picking, setpicking }) {
         >
           Calculate travel time
         </button>
+
+        <button className="btn btn-reset" onClick={handleReset}>
+          Reset database
+        </button>
       </section>
+
+      {picking && (
+        <p className="hint">Click the map to place up to 2 route markers (green = start, red = end).</p>
+      )}
+      {drawing && (
+        <p className="hint">Click to place polygon corners. Double-click to finish.</p>
+      )}
 
       {lastCalculated && (
         <section className="results">
@@ -92,15 +79,23 @@ export default function Controls({ state, dispatch, picking, setpicking }) {
         </section>
       )}
 
-      <button
-        className="btn btn-reset"
-        onClick={() => {
-          dispatch({ type: 'RESET' });
-          setpicking(false);
-        }}
-      >
-        Reset database
-      </button>
+      <section className="stats">
+        <div className="stat">
+          <span className="stat-label">Total records</span>
+          <span className="stat-value">{records.length}</span>
+        </div>
+        <div className="stat">
+          <span className="stat-label">Modified</span>
+          <span className="stat-value modified">{modifiedCount}</span>
+        </div>
+      </section>
+
+      <section className="legend">
+        <h2>Travel time legend</h2>
+        <div className="legend-row"><span className="dot green" /> &lt; 10 min</div>
+        <div className="legend-row"><span className="dot amber" /> 10 – 25 min</div>
+        <div className="legend-row"><span className="dot red" /> &gt; 25 min</div>
+      </section>
     </aside>
   );
 }

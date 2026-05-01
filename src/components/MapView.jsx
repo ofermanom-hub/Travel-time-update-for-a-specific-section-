@@ -19,44 +19,49 @@ function routeColor(travelTimeMin) {
   return '#ef4444';                            // red
 }
 
-// Adds and manages the leaflet-draw polygon toolbar
-function DrawControl({ dispatch }) {
+// Manages the L.Draw.Polygon handler and syncs with the drawing state
+function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef }) {
   const map = useMap();
   const drawnRef = useRef(null);
+  const handlerRef = useRef(null);
 
+  // Create handler and drawn-items layer once
   useEffect(() => {
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     drawnRef.current = drawnItems;
 
-    const drawControl = new L.Control.Draw({
-      position: 'topright',
-      draw: {
-        polygon: { shapeOptions: { color: '#6366f1', weight: 2 } },
-        polyline: false,
-        rectangle: false,
-        circle: false,
-        circlemarker: false,
-        marker: false,
-      },
-      edit: { featureGroup: drawnItems, remove: false },
-    });
-    map.addControl(drawControl);
+    const handler = new L.Draw.Polygon(map, { shapeOptions: { color: '#6366f1', weight: 2 } });
+    handlerRef.current = handler;
+    drawHandlerRef.current = handler;
 
     map.on(L.Draw.Event.CREATED, (e) => {
       drawnItems.clearLayers();
       drawnItems.addLayer(e.layer);
       const geoJson = e.layer.toGeoJSON();
+      setDrawing(false);
       dispatch({ type: 'SET_POLYGON', payload: geoJson });
       dispatch({ type: 'MUTATE_IN_POLYGON', payload: geoJson });
     });
 
     return () => {
-      map.removeControl(drawControl);
+      handler.disable();
       map.removeLayer(drawnItems);
       map.off(L.Draw.Event.CREATED);
+      drawHandlerRef.current = null;
     };
-  }, [map, dispatch]);
+  }, [map, dispatch, setDrawing, drawHandlerRef]);
+
+  // Sync drawing state → enable/disable handler
+  useEffect(() => {
+    const handler = handlerRef.current;
+    if (!handler) return;
+    if (drawing) {
+      handler.enable();
+    } else {
+      handler.disable();
+    }
+  }, [drawing]);
 
   return null;
 }
@@ -86,7 +91,7 @@ const endIcon = new L.Icon({
   iconAnchor: [12, 41],
 });
 
-export default function MapView({ records, routePoints, picking, dispatch }) {
+export default function MapView({ records, routePoints, picking, drawing, setDrawing, drawHandlerRef, dispatch }) {
   return (
     <MapContainer
       center={[40.75, -73.98]}
@@ -112,7 +117,7 @@ export default function MapView({ records, routePoints, picking, dispatch }) {
       {routePoints[0] && <Marker position={[routePoints[0].lat, routePoints[0].lng]} icon={startIcon} />}
       {routePoints[1] && <Marker position={[routePoints[1].lat, routePoints[1].lng]} icon={endIcon} />}
 
-      <DrawControl dispatch={dispatch} />
+      <DrawControl dispatch={dispatch} drawing={drawing} setDrawing={setDrawing} drawHandlerRef={drawHandlerRef} />
       <RouteClickHandler picking={picking} routePoints={routePoints} dispatch={dispatch} />
     </MapContainer>
   );
