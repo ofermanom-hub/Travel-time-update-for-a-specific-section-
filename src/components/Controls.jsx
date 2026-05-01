@@ -35,6 +35,7 @@ export default function Controls({
 
   function handleRefreshGIS() {
     dispatch({ type: 'REFRESH_SUBSET' });
+    dispatch({ type: 'CALCULATE_ROUTE' });
   }
 
   return (
