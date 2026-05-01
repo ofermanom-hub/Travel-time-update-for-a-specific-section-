@@ -4,6 +4,7 @@ export default function Controls({
   drawing, setDrawing, drawHandlerRef,
   vertexCount, clearDrawnRef,
   showGrid, setShowGrid,
+  routeLoading,
 }) {
   const { records, originalRecords, lastCalculated, selectedPolygon, changedIds } = state;
 
@@ -53,12 +54,13 @@ export default function Controls({
           onClick={() => setpicking((p) => !p)}
         >
           {picking ? 'Cancel picking' : 'Pick route points'}
+          {routeLoading && <span className="routing-spinner"> ⟳</span>}
         </button>
 
         <button
           className="btn"
           onClick={() => dispatch({ type: 'CALCULATE_ROUTE' })}
-          disabled={state.routePoints.length < 2}
+          disabled={state.routePoints.length < 2 || routeLoading}
         >
           Calculate travel time
         </button>
@@ -68,7 +70,6 @@ export default function Controls({
         </button>
       </section>
 
-      {/* Drawing tools — visible while polygon is being drawn */}
       {drawing && (
         <section className="drawing-tools">
           <p className="hint">
@@ -93,7 +94,6 @@ export default function Controls({
         </section>
       )}
 
-      {/* Polygon actions — visible once a polygon has been drawn */}
       {selectedPolygon && !drawing && (
         <section className="polygon-tools">
           <button className="btn btn-refresh" onClick={handleRefreshGIS}>
@@ -111,14 +111,18 @@ export default function Controls({
       )}
 
       {picking && (
-        <p className="hint">Click the map to place up to 2 route markers (green = start, red = end).</p>
+        <p className="hint">
+          {routeLoading
+            ? 'Routing via OSRM…'
+            : 'Click the map to place up to 2 route markers (green = start, red = end).'}
+        </p>
       )}
 
       {lastCalculated && (
         <section className="results">
           <h2>Results</h2>
           <div className="result-row">
-            <span>Haversine distance</span>
+            <span>Route distance</span>
             <strong>{lastCalculated.distanceKm.toFixed(2)} km</strong>
           </div>
           <div className="result-row">

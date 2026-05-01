@@ -13,7 +13,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Bounding box that matches seedTravelTimes.js (Manhattan + Brooklyn)
 const DATA_BOUNDS = [[40.68, -74.02], [40.82, -73.93]];
 
 function routeColor(travelTimeMin) {
@@ -22,7 +21,6 @@ function routeColor(travelTimeMin) {
   return '#ef4444';
 }
 
-// Manages the L.Draw.Polygon handler and syncs with the drawing state
 function DrawControl({ dispatch, drawing, setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef }) {
   const map = useMap();
   const drawnRef = useRef(null);
@@ -100,12 +98,11 @@ const endIcon = new L.Icon({
 });
 
 export default function MapView({
-  records, routePoints, changedIds, picking, drawing,
+  records, routePoints, routeGeometry, routeLoading,
+  changedIds, picking, drawing,
   setDrawing, drawHandlerRef, setVertexCount, clearDrawnRef, dispatch, showGrid,
 }) {
   const changedSet = new Set(changedIds);
-
-  // When grid is off, only render changed routes so highlights remain visible
   const visibleRecords = showGrid ? records : records.filter((r) => changedSet.has(r.id));
 
   return (
@@ -121,18 +118,17 @@ export default function MapView({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {/* Data coverage border */}
       <Rectangle
         bounds={DATA_BOUNDS}
         pathOptions={{ color: '#6366f1', weight: 2, dashArray: '6 5', fill: true, fillColor: '#6366f1', fillOpacity: 0.03 }}
       />
 
-      {/* Route polylines */}
+      {/* Seed route polylines — road-following geometry when available */}
       {visibleRecords.map((rec) => {
         const changed = changedSet.has(rec.id);
-        const positions = [[rec.originLat, rec.originLng], [rec.destLat, rec.destLng]];
+        const positions = rec.geometry;
         const color = routeColor(rec.travelTimeMin);
-        const distKm = ((rec.travelTimeMin / 60) * 25).toFixed(2);
+        const distKm = rec.distanceKm.toFixed(2);
         const tooltip = (
           <Tooltip sticky>
             <strong>Route #{rec.id}</strong><br />
@@ -167,6 +163,20 @@ export default function MapView({
           </Polyline>
         );
       })}
+
+      {/* Picked route — blue dashed OSRM path between the two markers */}
+      {routeGeometry && (
+        <Fragment>
+          <Polyline
+            positions={routeGeometry}
+            pathOptions={{ color: '#ffffff', weight: 8, opacity: 0.5 }}
+          />
+          <Polyline
+            positions={routeGeometry}
+            pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.95, dashArray: '8 4' }}
+          />
+        </Fragment>
+      )}
 
       {routePoints[0] && <Marker position={[routePoints[0].lat, routePoints[0].lng]} icon={startIcon} />}
       {routePoints[1] && <Marker position={[routePoints[1].lat, routePoints[1].lng]} icon={endIcon} />}
